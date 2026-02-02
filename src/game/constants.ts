@@ -78,5 +78,7 @@ export const COLORS = {
   radarBg: '#001100',
   radarShip: '#ffffff',
   radarLander: '#ff0000',
-  radarHuman: '#00ff00',
+  radarHuman: '#0088ff',
+  radarHumanCarried: '#ffff00',
+  explosion: '#ff8800',
 };

@@ -19,13 +19,36 @@ import {
   HUMAN_HEIGHT,
 } from './constants';
 
+// Explosion data for visual effects
+interface Explosion {
+  x: number;
+  y: number;
+  radius: number;
+  maxRadius: number;
+  alpha: number;
+}
+
 export class Renderer {
   private ctx: CanvasRenderingContext2D;
   private stars: { x: number; y: number; size: number }[];
+  private explosions: Explosion[] = [];
 
   constructor(ctx: CanvasRenderingContext2D) {
     this.ctx = ctx;
     this.stars = this.generateStars();
+  }
+
+  /**
+   * Add an explosion at the given position
+   */
+  addExplosion(x: number, y: number, size: number = 30): void {
+    this.explosions.push({
+      x,
+      y,
+      radius: 5,
+      maxRadius: size,
+      alpha: 1,
+    });
   }
 
   private generateStars(): { x: number; y: number; size: number }[] {
@@ -212,11 +235,11 @@ export class Renderer {
     this.ctx.lineTo(CANVAS_WIDTH, RADAR_HEIGHT - 2);
     this.ctx.stroke();
 
-    // Draw humans
-    this.ctx.fillStyle = COLORS.radarHuman;
+    // Draw humans (blue for walking, yellow for grabbed/carried)
     for (const human of humans) {
       if (!human.isAlive()) continue;
       const rx = human.x * scale;
+      this.ctx.fillStyle = human.state === 'grabbed' ? COLORS.radarHumanCarried : COLORS.radarHuman;
       this.ctx.fillRect(rx - 1, RADAR_HEIGHT - 6, 2, 4);
     }
 
@@ -243,6 +266,54 @@ export class Renderer {
     const viewWidth = CANVAS_WIDTH * scale;
     this.ctx.strokeStyle = '#444444';
     this.ctx.strokeRect(viewLeft, 2, viewWidth, RADAR_HEIGHT - 4);
+  }
+
+  /**
+   * Update and draw explosions
+   */
+  drawExplosions(cameraX: number, dt: number): void {
+    const toRemove: number[] = [];
+
+    for (let i = 0; i < this.explosions.length; i++) {
+      const exp = this.explosions[i];
+      
+      // Update explosion
+      exp.radius += 60 * dt;
+      exp.alpha -= 2 * dt;
+
+      if (exp.alpha <= 0 || exp.radius >= exp.maxRadius) {
+        toRemove.push(i);
+        continue;
+      }
+
+      // Draw explosion
+      const screenX = this.worldToScreen(exp.x, cameraX);
+      if (!this.isOnScreen(screenX)) continue;
+
+      this.ctx.save();
+      this.ctx.globalAlpha = exp.alpha;
+      
+      // Gradient from orange center to red edge
+      const gradient = this.ctx.createRadialGradient(
+        screenX, exp.y, 0,
+        screenX, exp.y, exp.radius
+      );
+      gradient.addColorStop(0, '#ffffff');
+      gradient.addColorStop(0.3, COLORS.explosion);
+      gradient.addColorStop(1, '#ff0000');
+      
+      this.ctx.fillStyle = gradient;
+      this.ctx.beginPath();
+      this.ctx.arc(screenX, exp.y, exp.radius, 0, Math.PI * 2);
+      this.ctx.fill();
+      
+      this.ctx.restore();
+    }
+
+    // Remove finished explosions (in reverse order)
+    for (let i = toRemove.length - 1; i >= 0; i--) {
+      this.explosions.splice(toRemove[i], 1);
+    }
   }
 
   drawHUD(score: number, lives: number, wave: number, humansAlive: number): void {
@@ -273,7 +344,8 @@ export class Renderer {
     terrain: TerrainPoint[],
     score: number,
     lives: number,
-    wave: number
+    wave: number,
+    dt: number = 0.016
   ): void {
     // Camera follows ship with lead in facing direction
     const cameraX = ship.x + ship.facing * 100;
@@ -285,6 +357,7 @@ export class Renderer {
     this.drawLanders(landers, cameraX);
     this.drawShip(ship, cameraX);
     this.drawLasers(lasers, cameraX);
+    this.drawExplosions(cameraX, dt);
     this.drawRadar(ship, landers, humans, cameraX);
     
     const humansAlive = humans.filter(h => h.isAlive()).length;

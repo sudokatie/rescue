@@ -43,8 +43,25 @@ export function GameCanvas() {
     // Handle input
     game.handleInput(input.getPressed(), cappedDt);
 
+    // Track landers before update for explosion detection
+    const landersBefore = new Map(game.landers.map(l => [l.id, { x: l.x, y: l.y }]));
+    const shipAliveBefore = game.ship.alive;
+
     // Update game state
     game.update(cappedDt);
+
+    // Check for destroyed landers and add explosions
+    const renderer = rendererRef.current;
+    landersBefore.forEach((pos, id) => {
+      if (!game.landers.find(l => l.id === id)) {
+        renderer.addExplosion(pos.x, pos.y, 25);
+      }
+    });
+
+    // Check for ship death
+    if (shipAliveBefore && !game.ship.alive) {
+      renderer.addExplosion(game.ship.x, game.ship.y, 40);
+    }
 
     // Sync React state
     setGameState(game.state);
@@ -52,7 +69,7 @@ export function GameCanvas() {
     setWave(game.wave);
 
     // Render
-    rendererRef.current.render(
+    renderer.render(
       game.ship,
       game.lasers,
       game.landers,
@@ -60,7 +77,8 @@ export function GameCanvas() {
       game.terrain,
       game.score,
       game.lives,
-      game.wave
+      game.wave,
+      cappedDt
     );
 
     animationRef.current = requestAnimationFrame(loop);
