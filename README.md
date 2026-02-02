@@ -1,36 +1,57 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Rescue
 
-## Getting Started
+A Defender-style side-scrolling shooter built with Next.js and TypeScript.
 
-First, run the development server:
+Protect humans on the ground from alien Landers. The world wraps horizontally, and a radar shows the full landscape. Destroy Landers before they grab humans, or catch falling humans after destroying abducting aliens.
+
+## Play
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Controls
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Key | Action |
+|-----|--------|
+| Left/Right Arrow | Thrust (sets facing direction) |
+| Up/Down Arrow | Vertical movement |
+| Space | Fire laser |
 
-## Learn More
+## Gameplay
 
-To learn more about Next.js, take a look at the following resources:
+- Landers spawn at the top and descend toward humans
+- Destroy Landers before they grab humans (150 points)
+- If a Lander grabs a human, destroy it before it escapes (200 points)
+- Catch falling humans (250 points) and land for bonus (500 points)
+- Survive waves of increasing difficulty
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Scoring
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- Destroy Lander: 150 pts
+- Destroy Lander (carrying human): 200 pts
+- Catch falling human: 250 pts
+- Return human to ground: 500 pts bonus
+- Wave complete: 1000 x wave number
 
-## Deploy on Vercel
+## Technical Details
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- Canvas-based rendering at 60 FPS
+- Wraparound world (2560px logical width)
+- Radar minimap showing entire world
+- Physics-based ship movement with inertia
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Development
+
+```bash
+npm test        # Run tests (171 passing)
+npm run build   # Production build
+npm run lint    # Check code style
+```
+
+## License
+
+MIT
