@@ -1,57 +1,79 @@
 # Rescue
 
-A Defender-style side-scrolling shooter built with Next.js and TypeScript.
+Defender-style side-scrolling shooter where you're the last line of defense against alien abduction. Protect the humans. Destroy the Landers. Try not to die.
 
-Protect humans on the ground from alien Landers. The world wraps horizontally, and a radar shows the full landscape. Destroy Landers before they grab humans, or catch falling humans after destroying abducting aliens.
+## Why This Exists
 
-## Play
+Because the original Defender was brutally hard and I wanted to understand why. Turns out: wraparound worlds, momentum-based movement, and aliens that actually have a plan make for surprisingly tense gameplay. Who knew.
+
+## Features
+
+- **Wraparound world** - 2560px of horizontal space that loops seamlessly (the math was fun)
+- **Physics-based ship** - Thrust, inertia, drag. You'll overshoot your target. A lot.
+- **Lander AI** - They descend, grab humans, and rise. Destroy them mid-abduction and you'd better catch that falling human
+- **Radar minimap** - See the whole world at once, because you'll need it
+- **Wave progression** - More Landers, faster Landers, less mercy
+
+## Quick Start
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open http://localhost:3000
+Open http://localhost:3000 and prepare for failure.
 
 ## Controls
 
 | Key | Action |
 |-----|--------|
-| Left/Right Arrow | Thrust (sets facing direction) |
-| Up/Down Arrow | Vertical movement |
+| Left/Right | Thrust (sets facing direction) |
+| Up/Down | Vertical movement |
 | Space | Fire laser |
 
-## Gameplay
-
-- Landers spawn at the top and descend toward humans
-- Destroy Landers before they grab humans (150 points)
-- If a Lander grabs a human, destroy it before it escapes (200 points)
-- Catch falling humans (250 points) and land for bonus (500 points)
-- Survive waves of increasing difficulty
+Vertical movement is direct. Horizontal movement has momentum. This distinction will matter.
 
 ## Scoring
 
 - Destroy Lander: 150 pts
-- Destroy Lander (carrying human): 200 pts
+- Destroy Lander carrying human: 200 pts (hero points)
 - Catch falling human: 250 pts
 - Return human to ground: 500 pts bonus
 - Wave complete: 1000 x wave number
 
-## Technical Details
+## The Human Rescue Flow
 
-- Canvas-based rendering at 60 FPS
-- Wraparound world (2560px logical width)
-- Radar minimap showing entire world
-- Physics-based ship movement with inertia
+1. Lander grabs human
+2. You destroy Lander (human starts falling)
+3. You catch falling human (250 pts)
+4. You fly down near the ground (human returned, 500 pts bonus)
+5. Human walks away like nothing happened
+
+Miss step 3 and the human becomes a stain on the landscape.
 
 ## Development
 
 ```bash
-npm test        # Run tests (171 passing)
-npm run build   # Production build
+npm test        # 171 tests passing
+npm run build   # Production build (93KB)
 npm run lint    # Check code style
 ```
+
+## Technical Notes
+
+- Canvas rendering at 60 FPS
+- Wraparound collision detection (trickier than it sounds)
+- Entity-component style architecture
+- TypeScript throughout
 
 ## License
 
 MIT
+
+## Author
+
+Katie
+
+---
+
+*They're coming for the humans. You're all that stands between civilization and alien experimentation. No pressure.*
