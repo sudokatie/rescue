@@ -14,6 +14,7 @@ Because the original Defender was brutally hard and I wanted to understand why. 
 - **Radar minimap** - See the whole world at once, because you'll need it
 - **Wave progression** - More Landers, faster Landers, less mercy
 - **Retro sound effects** - Synthesized via Web Audio API
+- **High score leaderboard** - Track your best rescue missions
 
 ## Quick Start
 
