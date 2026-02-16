@@ -14,6 +14,7 @@ import {
   scoreWaveComplete,
 } from './Wave';
 import { checkAllCollisions } from './Collision';
+import { Sound } from './Sound';
 import {
   WORLD_WIDTH,
   HUMAN_COUNT,
@@ -151,6 +152,7 @@ export class Game {
       now
     );
     this._lasers.push(laser);
+    Sound.play('shoot');
   }
 
   /**
@@ -207,6 +209,7 @@ export class Game {
         
         lander.destroy();
         this._score += scoreLanderDestroyed(wasCarrying);
+        Sound.play('explosion');
       }
     }
 
@@ -219,6 +222,7 @@ export class Game {
       if (human) {
         human.rescue();
         this._score += scoreCatchHuman();
+        Sound.play('humanRescue');
       }
     }
 
@@ -227,6 +231,7 @@ export class Game {
       if (human.state === 'rescued' && this._ship.y > GROUND_Y - 50) {
         human.returnToGround();
         this._score += scoreReturnHuman();
+        Sound.play('humanReturn');
       }
     }
 
@@ -236,6 +241,7 @@ export class Game {
         const human = this._humans.find(h => h.id === lander.getCarriedHumanId());
         if (human) {
           human.kill();
+          Sound.play('humanDeath');
         }
         lander.destroy();
       }
@@ -248,6 +254,7 @@ export class Game {
     if (collisions.shipDied && !isInvincible) {
       this._ship.destroy();
       this._lives--;
+      Sound.play('shipDeath');
       
       if (this._lives > 0) {
         // Respawn after brief delay
@@ -259,12 +266,14 @@ export class Game {
         }, 1000);
       } else {
         this._state = GameState.GameOver;
+        Sound.play('gameOver');
       }
     }
 
     // Check wave completion
     if (this._landers.length === 0 && this._pendingSpawns.length === 0) {
       this._score += scoreWaveComplete(this._wave);
+      Sound.play('waveComplete');
       this._state = GameState.WaveEnd;
     }
   }
@@ -305,5 +314,15 @@ export class Game {
    */
   getAliveHumanCount(): number {
     return this._humans.filter(h => h.isAlive()).length;
+  }
+
+  toggleSound(): boolean {
+    const newState = !Sound.isEnabled();
+    Sound.setEnabled(newState);
+    return newState;
+  }
+
+  isSoundEnabled(): boolean {
+    return Sound.isEnabled();
   }
 }

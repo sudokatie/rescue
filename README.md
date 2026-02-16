@@ -13,6 +13,7 @@ Because the original Defender was brutally hard and I wanted to understand why. 
 - **Lander AI** - They descend, grab humans, and rise. Destroy them mid-abduction and you'd better catch that falling human
 - **Radar minimap** - See the whole world at once, because you'll need it
 - **Wave progression** - More Landers, faster Landers, less mercy
+- **Retro sound effects** - Synthesized via Web Audio API
 
 ## Quick Start
 
