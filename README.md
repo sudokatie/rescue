@@ -28,11 +28,19 @@ Open http://localhost:3000 and prepare for failure.
 
 ## Controls
 
+### Keyboard
 | Key | Action |
 |-----|--------|
 | Left/Right | Thrust (sets facing direction) |
 | Up/Down | Vertical movement |
 | Space | Fire laser |
+
+### Mobile / Touch
+| Gesture | Action |
+|---------|--------|
+| Swipe left/right | Thrust |
+| Swipe up/down | Vertical movement |
+| Tap | Fire laser |
 
 Vertical movement is direct. Horizontal movement has momentum. This distinction will matter.
 
