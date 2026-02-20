@@ -14,6 +14,7 @@ import {
 } from '@/game/constants';
 import { TitleScreen } from './TitleScreen';
 import { GameOver } from './GameOver';
+import { Music } from '@/game/Music';
 
 export function GameCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -119,6 +120,24 @@ export function GameCanvas() {
         gameRef.current?.continueToNextWave();
       }, 2000);
       return () => clearTimeout(timer);
+    }
+  }, [gameState]);
+
+  // Switch music tracks based on game state
+  useEffect(() => {
+    switch (gameState) {
+      case GameState.Menu:
+        Music.play('menu');
+        break;
+      case GameState.Playing:
+        Music.play('gameplay');
+        break;
+      case GameState.WaveEnd:
+        Music.play('victory');
+        break;
+      case GameState.GameOver:
+        Music.play('gameover');
+        break;
     }
   }, [gameState]);
 
