@@ -8,11 +8,13 @@ import { TerrainPoint } from './types';
 import {
   generateWave,
   spawnLanders,
+  spawnSeededLanders,
   scoreLanderDestroyed,
   scoreCatchHuman,
   scoreReturnHuman,
   scoreWaveComplete,
 } from './Wave';
+import { SeededRNG, todaySeed, todayString, DailyLeaderboard } from './Daily';
 import { checkAllCollisions } from './Collision';
 import { Sound } from './Sound';
 import {
@@ -40,6 +42,12 @@ export class Game {
   private _waveTimer: number;
   private _lastFireTime: number;
   private _invincibleUntil: number;
+
+  // Daily challenge state
+  private _dailyMode: boolean = false;
+  private _dailySeed: number = 0;
+  private _dailyDate: string = '';
+  private _dailyRng: SeededRNG | null = null;
 
   constructor() {
     this._state = GameState.Menu;
@@ -89,9 +97,36 @@ export class Game {
     this._score = 0;
     this._lives = INITIAL_LIVES;
     this._wave = 0;
+    this._dailyMode = false;
+    this._dailyRng = null;
     this._ship.respawn();
     this._invincibleUntil = Date.now() + RESPAWN_INVINCIBILITY;
     this.startNextWave();
+  }
+
+  /** Start a daily challenge run */
+  startDaily(): void {
+    this._state = GameState.Playing;
+    this._score = 0;
+    this._lives = INITIAL_LIVES;
+    this._wave = 0;
+    this._dailyMode = true;
+    this._dailySeed = todaySeed();
+    this._dailyDate = todayString();
+    this._dailyRng = new SeededRNG(this._dailySeed);
+    this._ship.respawn();
+    this._invincibleUntil = Date.now() + RESPAWN_INVINCIBILITY;
+    this.startNextWave();
+  }
+
+  /** Check if currently in daily mode */
+  isDailyMode(): boolean {
+    return this._dailyMode;
+  }
+
+  /** Get today's daily leaderboard */
+  getDailyLeaderboard(): ReturnType<typeof DailyLeaderboard.getToday> {
+    return DailyLeaderboard.getToday();
   }
 
   /**
@@ -100,7 +135,13 @@ export class Game {
   private startNextWave(): void {
     this._wave++;
     const waveData = generateWave(this._wave);
-    this._pendingSpawns = spawnLanders(waveData, this._humans);
+    
+    // Use seeded spawns in daily mode
+    if (this._dailyMode && this._dailyRng) {
+      this._pendingSpawns = spawnSeededLanders(waveData, this._humans, this._dailyRng);
+    } else {
+      this._pendingSpawns = spawnLanders(waveData, this._humans);
+    }
     this._waveTimer = 0;
     resetLanderIds();
     this._landers = [];
@@ -267,6 +308,16 @@ export class Game {
       } else {
         this._state = GameState.GameOver;
         Sound.play('gameOver');
+        
+        // Record to daily leaderboard if in daily mode
+        if (this._dailyMode) {
+          DailyLeaderboard.recordScore(
+            'Player',
+            this._score,
+            this._wave,
+            this.getAliveHumanCount()
+          );
+        }
       }
     }
 
@@ -295,6 +346,12 @@ export class Game {
     this._score = 0;
     this._lives = INITIAL_LIVES;
     this._wave = 0;
+    
+    // Clear daily mode state
+    this._dailyMode = false;
+    this._dailySeed = 0;
+    this._dailyDate = '';
+    this._dailyRng = null;
     
     this._ship.respawn();
     this._lasers = [];

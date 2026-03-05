@@ -12,6 +12,7 @@ import {
   WAVE_SPAWN_DURATION,
 } from './constants';
 import { distance } from './World';
+import { SeededRNG } from './Daily';
 
 /**
  * Generate wave configuration for a given wave number
@@ -43,6 +44,45 @@ export function spawnLanders(wave: WaveData, humans: Human[]): { lander: Lander;
   for (let i = 0; i < wave.landerCount; i++) {
     // Random X position
     const x = Math.random() * WORLD_WIDTH;
+    
+    // Stagger spawn times over WAVE_SPAWN_DURATION seconds
+    const spawnTime = (i / wave.landerCount) * WAVE_SPAWN_DURATION;
+    
+    const lander = new Lander(x, -20, wave.landerSpeed);
+    
+    // Assign target to nearest human
+    if (humans.length > 0) {
+      let nearestHuman = humans[0];
+      let nearestDist = distance(x, nearestHuman.x);
+      
+      for (const human of humans) {
+        if (human.canBeGrabbed()) {
+          const d = distance(x, human.x);
+          if (d < nearestDist) {
+            nearestHuman = human;
+            nearestDist = d;
+          }
+        }
+      }
+      
+      lander.setTarget(nearestHuman.id);
+    }
+    
+    result.push({ lander, spawnTime });
+  }
+  
+  return result;
+}
+
+/**
+ * Create seeded landers for daily challenge
+ */
+export function spawnSeededLanders(wave: WaveData, humans: Human[], rng: SeededRNG): { lander: Lander; spawnTime: number }[] {
+  const result: { lander: Lander; spawnTime: number }[] = [];
+  
+  for (let i = 0; i < wave.landerCount; i++) {
+    // Seeded X position
+    const x = rng.nextFloat(0, WORLD_WIDTH);
     
     // Stagger spawn times over WAVE_SPAWN_DURATION seconds
     const spawnTime = (i / wave.landerCount) * WAVE_SPAWN_DURATION;
