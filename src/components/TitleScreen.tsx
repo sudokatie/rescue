@@ -3,12 +3,14 @@
 import { useState } from 'react';
 import { Music } from '@/game/Music';
 import { Sound } from '@/game/Sound';
+import { todayString } from '@/game/Daily';
 
 interface TitleScreenProps {
   onStart: () => void;
+  onStartDaily: () => void;
 }
 
-export function TitleScreen({ onStart }: TitleScreenProps) {
+export function TitleScreen({ onStart, onStartDaily }: TitleScreenProps) {
   const [musicVolume, setMusicVolume] = useState(Music.getVolume());
   const [soundVolume, setSoundVolume] = useState(Sound.getVolume());
   const [musicEnabled, setMusicEnabled] = useState(Music.isEnabled());
@@ -48,13 +50,22 @@ export function TitleScreen({ onStart }: TitleScreenProps) {
         <br />
         Destroy aliens before they abduct everyone.
       </p>
-      <button
-        onClick={onStart}
-        className="px-8 py-4 bg-cyan-600 hover:bg-cyan-500 text-white text-xl font-bold rounded-lg transition-colors"
-      >
-        START GAME
-      </button>
-      <div className="mt-8 text-gray-500 text-sm space-y-1 text-center">
+      <div className="flex flex-col gap-3">
+        <button
+          onClick={onStart}
+          className="px-8 py-4 bg-cyan-600 hover:bg-cyan-500 text-white text-xl font-bold rounded-lg transition-colors"
+        >
+          START GAME
+        </button>
+        <button
+          onClick={onStartDaily}
+          className="px-8 py-3 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-lg transition-colors"
+        >
+          DAILY CHALLENGE
+        </button>
+        <p className="text-purple-300 text-sm text-center">{todayString()}</p>
+      </div>
+      <div className="mt-4 text-gray-500 text-sm space-y-1 text-center">
         <div>Arrow Keys or WASD: Move</div>
         <div>Space: Fire</div>
       </div>
