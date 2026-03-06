@@ -8,9 +8,10 @@ import { todayString } from '@/game/Daily';
 interface TitleScreenProps {
   onStart: () => void;
   onStartDaily: () => void;
+  onWatchReplay: () => void;
 }
 
-export function TitleScreen({ onStart, onStartDaily }: TitleScreenProps) {
+export function TitleScreen({ onStart, onStartDaily, onWatchReplay }: TitleScreenProps) {
   const [musicVolume, setMusicVolume] = useState(Music.getVolume());
   const [soundVolume, setSoundVolume] = useState(Sound.getVolume());
   const [musicEnabled, setMusicEnabled] = useState(Music.isEnabled());
@@ -64,6 +65,12 @@ export function TitleScreen({ onStart, onStartDaily }: TitleScreenProps) {
           DAILY CHALLENGE
         </button>
         <p className="text-purple-300 text-sm text-center">{todayString()}</p>
+        <button
+          onClick={onWatchReplay}
+          className="px-8 py-2 bg-gray-600 hover:bg-gray-500 text-white font-medium rounded-lg transition-colors"
+        >
+          Watch Replay
+        </button>
       </div>
       <div className="mt-4 text-gray-500 text-sm space-y-1 text-center">
         <div>Arrow Keys or WASD: Move</div>

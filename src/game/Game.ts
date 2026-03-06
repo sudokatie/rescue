@@ -17,6 +17,7 @@ import {
 import { SeededRNG, todaySeed, todayString, DailyLeaderboard } from './Daily';
 import { checkAllCollisions } from './Collision';
 import { Sound } from './Sound';
+import { Replay, ReplayData, KeyAction, ReplayFrame } from './Replay';
 import {
   WORLD_WIDTH,
   HUMAN_COUNT,
@@ -48,6 +49,13 @@ export class Game {
   private _dailySeed: number = 0;
   private _dailyDate: string = '';
   private _dailyRng: SeededRNG | null = null;
+
+  // Replay state
+  private _replay: Replay = new Replay();
+  private _isPlayback: boolean = false;
+  private _lastReplayData: ReplayData | null = null;
+  private _recordingEnabled: boolean = true;
+  private _playbackKeys: Set<KeyAction> = new Set();
 
   constructor() {
     this._state = GameState.Menu;
@@ -101,6 +109,11 @@ export class Game {
     this._dailyRng = null;
     this._ship.respawn();
     this._invincibleUntil = Date.now() + RESPAWN_INVINCIBILITY;
+    this._isPlayback = false;
+    this._playbackKeys.clear();
+    if (this._recordingEnabled) {
+      this._replay.startRecording(false);
+    }
     this.startNextWave();
   }
 
@@ -116,6 +129,11 @@ export class Game {
     this._dailyRng = new SeededRNG(this._dailySeed);
     this._ship.respawn();
     this._invincibleUntil = Date.now() + RESPAWN_INVINCIBILITY;
+    this._isPlayback = false;
+    this._playbackKeys.clear();
+    if (this._recordingEnabled) {
+      this._replay.startRecording(true);
+    }
     this.startNextWave();
   }
 
@@ -154,27 +172,59 @@ export class Game {
     if (this._state !== GameState.Playing) return;
     if (!this._ship.alive) return;
 
+    // In playback mode, use playback keys instead
+    const activeKeys = this._isPlayback ? this._playbackKeys : keys;
+
+    // Map key names to actions and record state changes
+    const leftPressed = activeKeys.has('ArrowLeft') || activeKeys.has('KeyA') || activeKeys.has('left');
+    const rightPressed = activeKeys.has('ArrowRight') || activeKeys.has('KeyD') || activeKeys.has('right');
+    const upPressed = activeKeys.has('ArrowUp') || activeKeys.has('KeyW') || activeKeys.has('up');
+    const downPressed = activeKeys.has('ArrowDown') || activeKeys.has('KeyS') || activeKeys.has('down');
+    const firePressed = activeKeys.has('Space') || activeKeys.has('fire');
+
+    // Record key events (only when not in playback)
+    if (!this._isPlayback && this._recordingEnabled) {
+      this.recordKeyState('left', leftPressed);
+      this.recordKeyState('right', rightPressed);
+      this.recordKeyState('up', upPressed);
+      this.recordKeyState('down', downPressed);
+      this.recordKeyState('fire', firePressed);
+    }
+
     // Horizontal thrust
-    if (keys.has('ArrowLeft') || keys.has('KeyA')) {
+    if (leftPressed) {
       this._ship.thrust(-1, dt);
     }
-    if (keys.has('ArrowRight') || keys.has('KeyD')) {
+    if (rightPressed) {
       this._ship.thrust(1, dt);
     }
 
     // Vertical movement
-    if (keys.has('ArrowUp') || keys.has('KeyW')) {
+    if (upPressed) {
       this._ship.moveVertical(-1);
-    } else if (keys.has('ArrowDown') || keys.has('KeyS')) {
+    } else if (downPressed) {
       this._ship.moveVertical(1);
     } else {
       this._ship.stopVertical();
     }
 
     // Fire
-    if (keys.has('Space')) {
+    if (firePressed) {
       this.fireLaser();
     }
+  }
+
+  /** Track and record key state changes */
+  private _keyWasPressed: Map<KeyAction, boolean> = new Map();
+  
+  private recordKeyState(action: KeyAction, pressed: boolean): void {
+    const wasPressed = this._keyWasPressed.get(action) || false;
+    if (pressed && !wasPressed) {
+      this._replay.recordKeyDown(action);
+    } else if (!pressed && wasPressed) {
+      this._replay.recordKeyUp(action);
+    }
+    this._keyWasPressed.set(action, pressed);
   }
 
   /**
@@ -309,6 +359,15 @@ export class Game {
         this._state = GameState.GameOver;
         Sound.play('gameOver');
         
+        // Stop recording and save replay
+        if (this._replay.isRecording) {
+          this._lastReplayData = this._replay.stopRecording(
+            this._score,
+            this._wave,
+            this.getAliveHumanCount()
+          );
+        }
+        
         // Record to daily leaderboard if in daily mode
         if (this._dailyMode) {
           DailyLeaderboard.recordScore(
@@ -353,6 +412,12 @@ export class Game {
     this._dailyDate = '';
     this._dailyRng = null;
     
+    // Clear replay state
+    this._isPlayback = false;
+    this._recordingEnabled = true;
+    this._playbackKeys.clear();
+    this._keyWasPressed.clear();
+    
     this._ship.respawn();
     this._lasers = [];
     this._landers = [];
@@ -381,5 +446,88 @@ export class Game {
 
   isSoundEnabled(): boolean {
     return Sound.isEnabled();
+  }
+
+  // ==================
+  // Replay Methods
+  // ==================
+
+  /** Start playback of a replay */
+  startPlayback(data: ReplayData): void {
+    // Reset game state for playback
+    this.reset();
+    this._state = GameState.Playing;
+    this._score = 0;
+    this._lives = INITIAL_LIVES;
+    this._wave = 0;
+    this._dailyMode = data.dailyMode;
+    if (this._dailyMode) {
+      this._dailySeed = todaySeed();
+      this._dailyRng = new SeededRNG(this._dailySeed);
+    }
+    
+    this._isPlayback = true;
+    this._recordingEnabled = false;
+    this._playbackKeys.clear();
+    this._keyWasPressed.clear();
+    
+    this._ship.respawn();
+    this._invincibleUntil = Date.now() + RESPAWN_INVINCIBILITY;
+    this._replay.startPlayback(data);
+    this.startNextWave();
+  }
+
+  /** Stop replay playback */
+  stopPlayback(): void {
+    this._replay.stopPlayback();
+    this._isPlayback = false;
+    this._recordingEnabled = true;
+    this._playbackKeys.clear();
+    this.reset();
+  }
+
+  /** Update playback state - call in game loop */
+  updatePlayback(): void {
+    if (!this._isPlayback) return;
+    
+    // Get all ready actions and update playback key state
+    const actions = this._replay.getReadyActions();
+    for (const frame of actions) {
+      if (frame.pressed) {
+        this._playbackKeys.add(frame.action);
+      } else {
+        this._playbackKeys.delete(frame.action);
+      }
+    }
+    
+    // Check if playback complete
+    if (this._replay.isPlaybackComplete && this._state === GameState.Playing) {
+      // Playback done - let game continue until natural end
+    }
+  }
+
+  /** Check if currently in playback mode */
+  isPlayback(): boolean {
+    return this._isPlayback;
+  }
+
+  /** Get playback progress (0-1) */
+  getPlaybackProgress(): number {
+    return this._replay.playbackProgress;
+  }
+
+  /** Check if playback is complete */
+  isPlaybackComplete(): boolean {
+    return this._replay.isPlaybackComplete;
+  }
+
+  /** Get the last recorded replay data */
+  getLastReplayData(): ReplayData | null {
+    return this._lastReplayData;
+  }
+
+  /** Check if recording is enabled */
+  isRecording(): boolean {
+    return this._replay.isRecording;
   }
 }
